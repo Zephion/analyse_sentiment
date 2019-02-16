@@ -3,6 +3,7 @@ from keras.layers import Dense
 from keras.utils import to_categorical
 from keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split
+from keras.callbacks import EarlyStopping
 import numpy as np
 import pandas as pd
 
@@ -20,7 +21,7 @@ tokenizer.fit_on_texts(X)
 encoded_docsX = tokenizer.texts_to_matrix(X, mode='count')
 
 #Diviser le jeu de donnée 67% pour l'entrainement et 33% pour tester
-X_train, X_test, Y_train, Y_test = train_test_split(encoded_docsX, Y, test_size=0.33, random_state=7)
+X_train, X_test, Y_train, Y_test = train_test_split(encoded_docsX, Y, test_size=0.25, random_state=7)
 
 nbre_ligne = len(tokenizer.word_index) + 1
 
@@ -33,13 +34,27 @@ model.add(Dense(1, activation='sigmoid'))
 # Compile model
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+#Stopper l'entrainnement jusqu'à que le model ne s'améliore plus
+stopEntrainnement = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
+
 # Fit the model
-model.fit(X_train, Y_train, validation_data=(X_test,Y_test), epochs=2, batch_size=10)
+#model.fit(X_train, Y_train, validation_data=(X_test,Y_test), epochs=3, batch_size=10)
+model.fit(X_train, Y_train, validation_data=(X_test,Y_test), epochs=4, callbacks=[stopEntrainnement])
 
 dataset_Y_prediction = model.predict_classes(X_test)
 #print(dataset_Y_prediction)
 #print(type(dataset_Y_prediction))
+
+#Enregistrer les prédictions dans un fichier
 n=0
+f = open("test.txt", 'w', encoding = 'utf-8')
 for i in dataset_Y_prediction:
-   print(i, n)
+   #print(i, n)
+   f.write("Pour ligne: ")
+   f.write(str(n))
+   f.write(" valeur: ")
+   f.write(str(i))
+   f.write('\n')
    n=n+1
+
+f.close()
